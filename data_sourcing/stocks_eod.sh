@@ -1,9 +1,12 @@
 #!/bin/bash
-
 #***************************************************************************
 # Source all EOD (End of Day) data from Yahoo Finance for Stocks (eg companies)
 # 
 #***************************************************************************
+
+# Initiate runtime capture
+SECONDS=0
+
 echo ""
 echo 'Downloading EOD Stock Data...'
 
@@ -56,7 +59,6 @@ for f in *.csv; do
   	  # Capture name of empty file
 	  echo $f >> /Users/yassineltahir/Repos/stock_trading/ref/file_removed.txt
 
-
 	fi
 done
 
@@ -75,3 +77,8 @@ cd $loc
 file_size="$(du -ch $file_list | tail -1 | cut -f 1)"
 echo "Downloaded $file_size"
 echo ""
+
+#***************************************************************************
+# Capture Runtime
+duration=$SECONDS
+echo "Runtime: $(($duration / 60)) minutes and $(($duration % 60)) seconds"
