@@ -9,7 +9,9 @@
 #
 # Author:  2016-05-18  Yassin Eltahir
 #
-# Steps:
+# Steps: 
+#       0 - Setup Environment
+#       1 - Read Files, Clean, Output
 #
 #
 ##****************************************************************************************
@@ -23,7 +25,7 @@ pacman::p_load(data.table)
 
 
 
-# 1. Source Files, Clean, Output  ####
+# 1. Read Files, Clean, Output  ####
 
 # Get all files like "ticker_*"
 files <- list.files('ref/',pattern = 'tickers')
