@@ -3,6 +3,10 @@ import feedparser
 import pandas as pd
 import tqdm
 
+# References:
+# https://developer.yahoo.com/python/python-rss.html
+# https://developer.yahoo.com/finance/company.html
+
 
 # Tickers
 ticker_file = 'companies-2016-2-1470371480687.csv'
