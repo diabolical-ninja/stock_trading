@@ -58,11 +58,11 @@ eod['rolling_pct_change'] = eod.groupby('ticker')['pct_change'].apply(pd.rolling
 ave_pct_change = eod[eod.Date > '2016-07-01'].groupby('ticker')['pct_change'].apply(np.mean).reset_index('ticker')
 top_5 = ave_pct_change.sort_index(by='pct_change', ascending=False).head(5)
 
+# Required Plotly packages
+import plotly.graph_objs as go
+from plotly import tools
+from plotly.offline import plot
 
-from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-from plotly.graph_objs import Bar, Scatter, Figure, Layout
-import plotly.plotly as py
-init_notebook_mode(connected=True)
 
 # Plot top 5 stocks
 data = go.Scatter(
@@ -70,8 +70,9 @@ data = go.Scatter(
           y=eod[(eod.Date > '2016-07-01') & (eod.ticker=='WHC')]['pct_change']
          )
 
-go.Figure(data=data)
-py.iplot(data)
+#go.Figure(data=data)
+#py.iplot(data)
+plot(fig, filename='%s/%s_heat_map_%s'%(dir_name,script_name, ds))
 
 
 py.image.save_as(data, filename='test_plot')
