@@ -2,14 +2,11 @@
 import feedparser
 import pandas as pd
 import tqdm
-
-# References:
-# https://developer.yahoo.com/python/python-rss.html
-# https://developer.yahoo.com/finance/company.html
+import time
 
 
 # Tickers
-ticker_file = 'companies-2016-2-1470371480687.csv'
+ticker_file = 'C:/Users/yassin.eltahir/Downloads/companies-2016-2-1470371480687.csv'
 codes = pd.read_csv(ticker_file, delimiter=',')
 
 # Variable to populate with articles
@@ -19,7 +16,7 @@ headline = []
 for ticker in tqdm.tqdm(codes.Code):
     
     # Build Headlines URL string
-    url = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=' + ticker + '&region=US&lang=en-US'
+    url = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=' + ticker + '.AX&region=US&lang=en-US'
     
     # Source headlines
     info = feedparser.parse(url)
@@ -32,3 +29,10 @@ for ticker in tqdm.tqdm(codes.Code):
 
 articles = pd.DataFrame(headline)
 
+
+# Export to CSV
+date = time.strftime("%Y%m%d")
+file_name = date + '_headlines'
+loc = 'C:/Users/yassin.eltahir/Downloads/asx_200_headlines/'+ file_name + '.csv'
+
+articles.to_csv(loc, header=True, index=False, encoding='utf-8', sep='|')
