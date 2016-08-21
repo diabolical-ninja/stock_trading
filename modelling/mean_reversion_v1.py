@@ -131,10 +131,10 @@ def mean_reversion(data,dol_buy,mean_window,brokerage, mean_type, date_name, buy
             
         if action == 'Nothing':
             
-            # No income or expenses
+            # No income
             income = 0
-            expenses = 0
             
+            # No Shares Bought
             shares_bought = 0
         
         
@@ -171,19 +171,19 @@ def mean_reversion(data,dol_buy,mean_window,brokerage, mean_type, date_name, buy
 
 ## Test Data
 # Select Ticker
-ticker = np.unique(eod.ticker)[20]
+ticker = np.unique(eod.ticker)[192]
 ticker = 'IRE'
-test = eod[eod.ticker=='IRE']
+test = eod[eod.ticker==ticker]
 
 
 
 try1 = mean_reversion(data=test, 
-                      dol_buy = 1000,
+                      dol_buy = 100,
                       mean_window = 20,
                       brokerage = 17,
                       mean_type = 'MA',
                       date_name = 'Date',
-                      buy_sell_buffer = .10)
+                      buy_sell_buffer = .1)
 
 
 try1_melt = pd.melt(try1, id_vars=['Date'])
@@ -208,3 +208,6 @@ fig = go.Figure(data=data, layout=layout)
 
 # Generate Plot
 plot(fig, filename='test2')
+
+
+#try1.to_csv('test_out')
