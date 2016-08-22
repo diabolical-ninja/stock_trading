@@ -63,7 +63,6 @@ def mean_reversion(data,dol_buy,mean_window,brokerage, mean_type, date_name, buy
 
     
     # 1. Sort By Date Ascending
-    date_name = 'Date'
     data = data.sort_values(by=date_name)
     
     # 2. Calculate rolling average of size "mean_window"
@@ -171,22 +170,28 @@ def mean_reversion(data,dol_buy,mean_window,brokerage, mean_type, date_name, buy
 
 ## Test Data
 # Select Ticker
-ticker = np.unique(eod.ticker)[192]
-ticker = 'IRE'
+ticker = np.unique(eod.ticker)[134]
+#ticker = 'IRE'
 test = eod[eod.ticker==ticker]
 
 
-
+margin = 0.1
 try1 = mean_reversion(data=test, 
-                      dol_buy = 100,
+                      dol_buy = 1000,
                       mean_window = 20,
                       brokerage = 17,
                       mean_type = 'MA',
                       date_name = 'Date',
-                      buy_sell_buffer = .1)
+                      buy_sell_buffer = margin)
 
 
-try1_melt = pd.melt(try1, id_vars=['Date'])
+
+
+# Plot Success (!!!)
+
+try1_sub = try1[['Date','Open','shares_owned','profit_loss']]
+
+try1_melt = pd.melt(try1_sub, id_vars=['Date'])
 
 
 
@@ -198,7 +203,7 @@ data = [go.Scatter(x = try1_melt[try1_melt.variable == var].Date,
 
 # Plot Nicities
 layout = go.Layout(
-    title= ticker + ': Daily Profit/Loss on simple Mean Reversion Strategy',
+    title= ('%s: Daily Profit/Loss on simple Mean Reversion Strategy - Buy/Sell Threshold = %0.0f%%'%(ticker,margin*100)),
     yaxis=dict(title='$'),
     xaxis=dict(title='Date')
     )
@@ -207,7 +212,7 @@ layout = go.Layout(
 fig = go.Figure(data=data, layout=layout)
 
 # Generate Plot
-plot(fig, filename='test2')
+plot(fig, filename='test')
 
 
-#try1.to_csv('test_out')
+#try1[(try1.Date > '2013-04-01') & (try1.Date < '2014-01-01')].to_csv('test_out')
