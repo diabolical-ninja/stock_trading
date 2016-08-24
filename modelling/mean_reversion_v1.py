@@ -18,6 +18,12 @@ import math
 import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
+import multiprocessing
+from multiprocessing import Process
+from multiprocessing import Pool as ThreadPool
+import os
+import datetime
+from functools import partial
 
 
 
@@ -168,38 +174,57 @@ def mean_reversion(data,dol_buy,mean_window,brokerage, mean_type, date_name, buy
 
 
 
-## Test Data
-# Select Ticker
-ticker = np.unique(eod.ticker)[134]
-#ticker = 'IRE'
-test = eod[eod.ticker==ticker]
-
-
+# Setup parameters
+num_cores = multiprocessing.cpu_count()
 margin = 0.1
-try1 = mean_reversion(data=test, 
+
+# Break into tickers
+grouped = eod.groupby('ticker')
+dflist = []
+for name, group in grouped:
+    dflist.append(group)
+
+# Start Timer
+start = datetime.datetime.today()
+
+# Apply mean reversion to each ticker
+if __name__ == "__main__":
+    pool = ThreadPool(num_cores)
+    func = partial(mean_reversion, 
                       dol_buy = 1000,
                       mean_window = 20,
-                      brokerage = 17,
+                      brokerage = 2,
                       mean_type = 'MA',
                       date_name = 'Date',
                       buy_sell_buffer = margin)
+    results = pool.map(func, dflist)
+    pool.close()
+    pool.join()
+
+
+# Stop Timer & Calculate Runtime
+end = datetime.datetime.today()
+run = (end - start).seconds
 
 
 
 
 # Plot Success (!!!)
 
-try1_sub = try1[['Date','Open','shares_owned','profit_loss']]
+# Select a stock
+result_sub = results[33]
 
-try1_melt = pd.melt(try1_sub, id_vars=['Date'])
+result_sub = result_sub[['Date','Open','shares_owned','profit_loss']]
 
+result_sub_melt = pd.melt(result_sub , id_vars=['Date'])
 
+ticker = '??'
 
 # Plot Data
-data = [go.Scatter(x = try1_melt[try1_melt.variable == var].Date,
-                   y=try1_melt[try1_melt.variable == var].value,
+data = [go.Scatter(x = result_sub_melt[result_sub_melt.variable == var].Date,
+                   y=result_sub_melt[result_sub_melt.variable == var].value,
                    name=var
-               ) for var in np.unique(try1_melt.variable)]
+               ) for var in np.unique(result_sub_melt.variable)]
 
 # Plot Nicities
 layout = go.Layout(
@@ -215,4 +240,3 @@ fig = go.Figure(data=data, layout=layout)
 plot(fig, filename='test')
 
 
-#try1[(try1.Date > '2013-04-01') & (try1.Date < '2014-01-01')].to_csv('test_out')
