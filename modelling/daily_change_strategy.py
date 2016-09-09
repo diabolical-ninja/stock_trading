@@ -79,7 +79,7 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
 
 
     # For each day
-    date_range = data[num_days:data.shape[0]]['Date'].unique()
+    date_range = data[num_days:data.shape[0]][ts_name].unique()
     for day in tqdm(date_range):
 
         # Calculate change over last num_days days
@@ -252,6 +252,7 @@ fig = go.Figure(data=data, layout=layout)
 
 # Generate Plot
 plot(fig, filename='test')
+
 
 
 
