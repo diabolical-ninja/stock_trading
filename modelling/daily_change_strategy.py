@@ -43,7 +43,7 @@ eod['Date'] = pd.to_datetime(eod.Date)
 
 
 
-def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_type, margin=0):
+def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_type, margin=0, sell_off = False):
 
     """
     <Function Description>
@@ -158,11 +158,40 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
         # Log Revenue
         revenue = revenue + sum([x[2] for x in actions[-1]])
         
-                
         # Identify Tickers Sold
         tick_sold = [sold[0] for sold in actions[-1] if sold[3]=='sell']
         owned_tickers = [owned for owned in owned_tickers if owned[0] not in tick_sold]
+    
+    # Sell off holdings
+    # Goddam this is some shitty code!
+    # This whole Fn should be substantially more space & compute efficient!!
+    if sell_off == True:
         
+        # Setup vars to initiate sell-off
+        max_date = eod['Date'].max()
+        action = 'sell'
+        hold = []
+        
+        for tick in owned_tickers:
+            
+            # Track income from sale
+            income = tick[2] * float(data[(data.ticker== tick[0]) & (data.Date==max_date)].Open.values) - brokerage
+            
+            # Prep output
+            out = [tick[0],max_date,income,action]
+            hold.append(out)
+    
+    actions.append(hold)
+    
+    # Log Revenue
+    revenue = revenue + sum([x[2] for x in actions[-1]])
+    
+    # Identify Tickers Sold
+    tick_sold = [sold[0] for sold in actions[-1] if sold[3]=='sell']
+    owned_tickers = [owned for owned in owned_tickers if owned[0] not in tick_sold]
+    
+    
+      
     # Return Expenses, Revenue and Shares Held
     results = [expenses, revenue, owned_tickers, actions]
     
@@ -179,7 +208,8 @@ test = change(data = eod[eod.Date > '2016-01-01'],
        buy_amount = 1000, # If buy, then $1000
        ts_name = 'Date',
        change_type = 'pct',
-       margin=0.03)
+       margin=0.03,
+       sell_off = True)
        
 total_expenses = test[0]
 total_revenue = test[1]   
