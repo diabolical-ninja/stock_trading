@@ -80,12 +80,12 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
 
     # For each day
     ## SOMETHING IS WRONG WITH THE DAY FORMAT!!! TO FIX!
-    date_range = data[num_days:data.shape[0]].Date.unique
-    for day in tqdm(date_range()):
+    date_range = data[num_days:data.shape[0]]['Date'].unique()
+    for day in tqdm(date_range):
 
         # Calculate change over last num_days days
         # NOTE: This currently doesn't take into account weekends!!! TO ADD!
-        amount_changed = data[(data[ts_name] >= (day-timedelta(days=num_days))) & (data[ts_name] < day)].groupby(by='ticker')['change'].sum()
+        amount_changed = data[(data[ts_name] >= (day - pd.to_timedelta(timedelta(days=num_days)))) & (data[ts_name] < day)].groupby(by='ticker')['change'].sum()
 
         # Identify Stocks with largest change
         tick_to_buy = list(amount_changed.nlargest(num_stocks).index)
@@ -109,7 +109,7 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
                 action = 'hold'
 
             # Compile Output
-            out = [x, shares_bought, cost, open_price, action]
+            out = [x, day, shares_bought, cost, open_price, action]
             return(out)
 
         # Purchse $buy_amount of each stock if not already owned
@@ -131,17 +131,21 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
                 cost = [ticker[1]*ticker[2] for ticker in owned_tickers if ticker[0]==x][0]
                 todays_worth = [ticker[2] for ticker in owned_tickers if ticker[0]==x][0] * float(data[(data.ticker==x) & (data.Date==day)].Open.values)
                 
-                if (cost + cost*margin - 2*brokerage) > todays_worth:
+                if (cost + cost*margin + 2*brokerage) < todays_worth:
                     action = 'sell'
                     income = todays_worth - brokerage
                     
                     # Remove from owned_tickers list
                     tick_sell.append(x)
+                                    
+                else:
+                    action = 'hold'
+                    income = 0
                     
             else:
-                action = 'hold'
-                income = 0
-                    
+                    action = 'hold'
+                    income = 0
+                        
             # Compile Output
             out = [x,day,income,action]
             return(out)
@@ -149,7 +153,8 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
                 
                 
         # Sell shares where appropriate
-        actions.append(map(sell, tick_to_buy))
+        try_sell = [x[0] for x in owned_tickers] 
+        actions.append(map(sell, try_sell))
         
         # Log Revenue
         revenue = revenue + sum([x[2] for x in actions[-1]])
@@ -160,12 +165,15 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
         owned_tickers = [owned for owned in owned_tickers if owned[0] not in tick_sold]
         
     # Return Expenses, Revenue and Shares Held
-    out = [expenses, revenue, owned_tickers]
+    results = [expenses, revenue, owned_tickers, actions]
+    
+    return(results)
+
 
 
 
 # Apply "change" function
-test = change(data = eod[eod.Date > '2016-01-01'],
+test = change(data = eod[eod.Date > '2015-01-01'],
        brokerage = 2,
        num_stocks = 3, # purchase top 3
        num_days = 3, # Change based on last 3 days
@@ -173,3 +181,74 @@ test = change(data = eod[eod.Date > '2016-01-01'],
        ts_name = 'Date',
        change_type = 'pct',
        margin=0)
+       
+total_expenses = test[0]
+total_revenue = test[1]   
+remaining_stocks_owned = test[2]
+transaction_history = test[3]    
+
+
+
+
+# Format action history to view expenses, revenue & profit over time
+
+# Get all Expenses
+expenses_capture = pd.DataFrame()
+for i in transaction_history:
+    
+    hold = pd.DataFrame([x for x in i if x[-1]=='buy'])
+    expenses_capture = pd.concat([expenses_capture,hold],axis=0)
+
+expenses_capture.columns = ('Ticker','Date','shares_bought','expenses', 'open_price', 'Action')  
+
+
+# Get all revenue
+revenue_capture = pd.DataFrame()
+for i in transaction_history:
+    
+    hold = pd.DataFrame([x for x in i if x[-1]=='sell'])
+    revenue_capture = pd.concat([revenue_capture,hold],axis=0)
+    
+revenue_capture.columns = ('Ticker','Date','revenue','Action')  
+
+
+# Sum by date
+expenses_sum = expenses_capture[['Ticker','Date','expenses','Action']].groupby('Date').sum()
+expenses_sum.reset_index(inplace=True)
+
+revenue_sum = revenue_capture.groupby('Date').sum()
+revenue_sum.reset_index(inplace=True)
+
+# Join DF's
+all_df = expenses_sum.merge(revenue_sum, left_on='Date', right_on='Date', how='outer')    
+
+all_df['profit'] = all_df.revenue - all_df.expenses
+all_df['profit'].fillna(0, inplace=True)
+all_df['profit'] = all_df['profit'].cumsum(axis=0)    
+
+result_sub_melt = pd.melt(all_df , id_vars=['Date'])    
+
+# Plot Data
+data = [go.Scatter(x = result_sub_melt[result_sub_melt.variable == var].Date,
+                   y=result_sub_melt[result_sub_melt.variable == var].value,
+                   name=var
+               ) for var in np.unique(result_sub_melt.variable)]
+
+# Plot Nicities
+layout = go.Layout(
+    title= ('Daily Profit/Loss on Daily Change Strategy'),
+    yaxis=dict(title='$'),
+    xaxis=dict(title='Date')
+    )
+    
+# Combine Plot & Formatting
+fig = go.Figure(data=data, layout=layout)
+
+# Generate Plot
+plot(fig, filename='test')
+
+
+
+
+
+
