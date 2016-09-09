@@ -79,7 +79,6 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
 
 
     # For each day
-    ## SOMETHING IS WRONG WITH THE DAY FORMAT!!! TO FIX!
     date_range = data[num_days:data.shape[0]]['Date'].unique()
     for day in tqdm(date_range):
 
@@ -116,7 +115,7 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
         actions.append(map(buy, tick_to_buy))
 
         # Log expenses
-        expenses = expenses + sum([x[2] for x in actions[-1]])
+        expenses = expenses + sum([x[3] for x in actions[-1]])
 
 
         # Sell Owned Shares Past threshold
@@ -173,14 +172,14 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
 
 
 # Apply "change" function
-test = change(data = eod[eod.Date > '2015-01-01'],
+test = change(data = eod[eod.Date > '2016-01-01'],
        brokerage = 2,
-       num_stocks = 3, # purchase top 3
+       num_stocks = 5, # purchase top 3
        num_days = 3, # Change based on last 3 days
        buy_amount = 1000, # If buy, then $1000
        ts_name = 'Date',
        change_type = 'pct',
-       margin=0)
+       margin=0.03)
        
 total_expenses = test[0]
 total_revenue = test[1]   
@@ -220,12 +219,19 @@ revenue_sum = revenue_capture.groupby('Date').sum()
 revenue_sum.reset_index(inplace=True)
 
 # Join DF's
-all_df = expenses_sum.merge(revenue_sum, left_on='Date', right_on='Date', how='outer')    
+all_df = expenses_sum.merge(revenue_sum, on='Date', how='outer')    
+all_df = all_df.sort_values(by='Date')
+all_df['expenses'].fillna(0, inplace=True)
+all_df['revenue'].fillna(0, inplace=True)
 
+
+
+# Calculate cumulative equity
 all_df['profit'] = all_df.revenue - all_df.expenses
 all_df['profit'].fillna(0, inplace=True)
 all_df['profit'] = all_df['profit'].cumsum(axis=0)    
 
+# Melt for plotting
 result_sub_melt = pd.melt(all_df , id_vars=['Date'])    
 
 # Plot Data
@@ -236,7 +242,7 @@ data = [go.Scatter(x = result_sub_melt[result_sub_melt.variable == var].Date,
 
 # Plot Nicities
 layout = go.Layout(
-    title= ('Daily Profit/Loss on Daily Change Strategy'),
+    title= ('Equity Breakdown on Daily Change Strategy'),
     yaxis=dict(title='$'),
     xaxis=dict(title='Date')
     )
@@ -246,6 +252,7 @@ fig = go.Figure(data=data, layout=layout)
 
 # Generate Plot
 plot(fig, filename='test')
+
 
 
 
