@@ -41,8 +41,6 @@ eod['Date'] = pd.to_datetime(eod.Date)
 # (- If stock age is greater than 7, sell)
 
 
-
-
 def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_type, margin=0, sell_off = False):
 
     """
@@ -124,7 +122,7 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
             tick_sell = []
             
             # If in highest changes then don't sell
-            if x not in tick_to_buy:
+            if (x not in tick_to_buy) & (not data[(data.ticker==x) & (data.Date==day)].empty):
                 
                 # Check if value is greater than cost + 2xbrokerage
                 cost = [ticker[1]*ticker[2] for ticker in owned_tickers if ticker[0]==x][0]
@@ -201,7 +199,7 @@ def change(data, brokerage, num_stocks, num_days, buy_amount, ts_name, change_ty
 
 
 # Apply "change" function
-test = change(data = eod[eod.Date > '2016-01-01'],
+test = change(data = eod[eod.Date > '2014-01-01'],
        brokerage = 2,
        num_stocks = 5, # purchase top 3
        num_days = 3, # Change based on last 3 days
@@ -282,6 +280,8 @@ fig = go.Figure(data=data, layout=layout)
 
 # Generate Plot
 plot(fig, filename='test')
+
+
 
 
 
